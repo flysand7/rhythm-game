@@ -2,6 +2,8 @@ package game
 
 import "core:time"
 
+WORST_HIT_MS :: 200
+
 Hit_Sound :: enum {
     Clap,
     Hi_Hat_Open,
@@ -24,6 +26,7 @@ Beatmap :: struct {
     objects: []Hit_Object,
     offset: int,
     bpm: int,
+    al: int,
 }
 
 // How well a player has hit a hit object.
@@ -80,13 +83,13 @@ check_player_hit :: proc(play_state: ^Play_State, t: time.Duration) -> (Hit_Obje
     // on player's set up) distribution, centered around a certain point. With
     // 15ms being a good measure of a "perfect" hit, we can spread out the rest
     // of the hits accordingly.
-    // TODO: Implement hit accuracy leniency.
+    acc_leniency := play_state.bm.al
     acc: Hit_Accuracy
     switch {
-        case min_diff_ms <= 50:  acc = .Perfect
-        case min_diff_ms <= 100: acc = .Good
-        case min_diff_ms <= 200: acc = .Bad  // Player has reacted, didn't feel the rhythm
-        case min_diff_ms <= 300: acc = .Miss // Too far away
+        case min_diff_ms <= 10 + 5*acc_leniency:     acc = .Perfect
+        case min_diff_ms <= 2*(10 + 5*acc_leniency): acc = .Good
+        case min_diff_ms <= 4*(10 + 5*acc_leniency): acc = .Bad  // Player has reacted, didn't feel the rhythm
+        case min_diff_ms <= WORST_HIT_MS: acc = .Miss // Too far away
         case: return {}, false
     }
     play_state.next_hit_object_idx = min_i+1
@@ -97,7 +100,7 @@ check_player_hit :: proc(play_state: ^Play_State, t: time.Duration) -> (Hit_Obje
 check_expired_hits :: proc(play_state: ^Play_State, t: time.Duration) {
     for idx in play_state.next_hit_object_idx ..< len(play_state.bm.objects[:]) {
     hit_object_dur := bm_ticks_to_dur(&play_state.bm, play_state.bm.objects[idx].tick)
-    if t - hit_object_dur > 300*time.Millisecond {
+    if t - hit_object_dur > WORST_HIT_MS*time.Millisecond {
         play_state.next_hit_object_idx = idx + 1
         submit_hit(play_state, .Miss, t)
     } else {

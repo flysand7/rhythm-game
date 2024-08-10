@@ -75,6 +75,7 @@ main :: proc() {
             },
             offset = 30 + 5*NOTE,
             bpm = 120,
+            al = 5,
         },
         hit_texts = make([dynamic]Hit_Text, allocator = context.allocator),
         hits = {},
