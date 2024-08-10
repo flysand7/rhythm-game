@@ -2,9 +2,20 @@ package game
 
 import "core:time"
 
+Hit_Sound :: enum {
+    Clap,
+    Hi_Hat_Open,
+    Hi_Hat_Closed,
+    Kick,
+    Rim,
+    Snare,
+    Symbal,
+}
+
 // A clickable object, i.e. a visible note in the song.
 Hit_Object :: struct {
     tick: int,
+    hit_sound: Hit_Sound,
     color: u32,
 }
 
@@ -48,7 +59,7 @@ submit_hit :: proc(play_state: ^Play_State, acc: Hit_Accuracy, dur: time.Duratio
     play_state.hits[acc] += 1
 }
 
-check_player_hit :: proc(play_state: ^Play_State, t: time.Duration) {
+check_player_hit :: proc(play_state: ^Play_State, t: time.Duration) -> (Hit_Object, bool) {
     beatmap := &play_state.bm
     // TODO: Optimize to use binary searching
     min_i := -1
@@ -62,7 +73,7 @@ check_player_hit :: proc(play_state: ^Play_State, t: time.Duration) {
         }
     }
     if min_i < 0 {
-        return
+        return {}, false
     }
     h := beatmap.objects[min_i]
     // On average the timing distribution is a normal (or a binormal, depending
@@ -76,10 +87,11 @@ check_player_hit :: proc(play_state: ^Play_State, t: time.Duration) {
         case min_diff_ms <= 100: acc = .Good
         case min_diff_ms <= 200: acc = .Bad  // Player has reacted, didn't feel the rhythm
         case min_diff_ms <= 300: acc = .Miss // Too far away
-        case: return
+        case: return {}, false
     }
     play_state.next_hit_object_idx = min_i+1
     submit_hit(play_state, acc, t)
+    return beatmap.objects[min_i], true
 }
 
 check_expired_hits :: proc(play_state: ^Play_State, t: time.Duration) {
