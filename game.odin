@@ -72,10 +72,10 @@ check_player_hit :: proc(play_state: ^Play_State, t: time.Duration) {
     // TODO: Implement hit accuracy leniency.
     acc: Hit_Accuracy
     switch {
-        case min_diff_ms <= 30:  acc = .Perfect
+        case min_diff_ms <= 50:  acc = .Perfect
         case min_diff_ms <= 100: acc = .Good
-        case min_diff_ms <= 250: acc = .Bad  // Player has reacted, didn't feel the rhythm
-        case min_diff_ms <= 500: acc = .Miss // Too far away
+        case min_diff_ms <= 200: acc = .Bad  // Player has reacted, didn't feel the rhythm
+        case min_diff_ms <= 300: acc = .Miss // Too far away
         case: return
     }
     play_state.next_hit_object_idx = min_i+1
