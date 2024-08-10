@@ -114,6 +114,7 @@ main :: proc() {
         game_duration_in_ticks := dur_to_ticks(play_state.bm.bpm, game_duration)
         rl.DrawLine(0, TIMELINE_Y, 1280, TIMELINE_Y, rl.GetColor(0x777777ff))
         draw_timeline(play_state.bm, game_duration_in_ticks)
+        draw_hit_distribution(play_state)
         for hit_object, idx in play_state.bm.objects {
             circle_color := rl.GetColor(hit_object.color)
             if idx < play_state.next_hit_object_idx {
@@ -141,7 +142,7 @@ main :: proc() {
             }
             draw_hit_accuracy(&ht)
         }
-        rl.DrawText(fmt.caprintf("Acc: %.2f%%", 100.0*current_acc(&play_state), allocator = context.temp_allocator), 20, 200, 20, rl.WHITE)
+        rl.DrawText(fmt.caprintf("Acc: %.2f%%", 100.0*current_acc(&play_state), allocator = context.temp_allocator), 30, 350, 20, rl.WHITE)
         rl.EndDrawing()
     }
     rl.CloseWindow()

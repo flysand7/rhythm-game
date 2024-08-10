@@ -78,6 +78,44 @@ draw_hit_accuracy :: proc(ht: ^Hit_Text) {
     ht.y_offs += 5
 }
 
+draw_hit_distribution :: proc(play_state: Play_State) {
+    OFF_X :: 30
+    OFF_Y :: 300
+    MAX_Y :: 400
+    GRAPH_W :: 300
+    UI_SCALE :: f32(GRAPH_W) / f32(2*WORST_HIT_MS)
+    center_x := i32(OFF_X+GRAPH_W/2)
+    // Draw the graph
+    GROUP_BY_MS :: 5
+    group_by_px := f32(GROUP_BY_MS) * UI_SCALE
+    buckets := make([]int, 2*WORST_HIT_MS/GROUP_BY_MS, context.temp_allocator)
+    max_hits := 1
+    for hit in play_state.hits {
+        if abs(hit.diff_ms) >= WORST_HIT_MS {
+            continue;
+        }
+        bucket := (WORST_HIT_MS + hit.diff_ms) / GROUP_BY_MS
+        buckets[bucket] += 1
+        if buckets[bucket] > max_hits {
+            max_hits = buckets[bucket]
+        }
+    }
+    for b, i in buckets {
+        bucket_off_x := OFF_X + i32(i)*i32(group_by_px)
+        bucket_height_y := i32(100*b / max_hits)
+        rl.DrawRectangle(bucket_off_x, OFF_Y - bucket_height_y, i32(group_by_px), bucket_height_y, rl.WHITE)
+    }
+    // Draw the ticks
+    rl.DrawLine(OFF_X, OFF_Y, OFF_X + GRAPH_W, OFF_Y, rl.WHITE)
+    rl.DrawLine(center_x, OFF_Y-10, center_x, OFF_Y+10, rl.WHITE)
+    tick_offs_perfect := cast(i32) (f32(1*(10 + 5*play_state.bm.al)) * UI_SCALE)
+    rl.DrawLine(center_x - tick_offs_perfect, OFF_Y-5, center_x - tick_offs_perfect, OFF_Y+5, rl.GetColor(0x03d3fcff))
+    rl.DrawLine(center_x + tick_offs_perfect, OFF_Y-5, center_x + tick_offs_perfect, OFF_Y+5, rl.GetColor(0x03d3fcff))
+    tick_offs_good := cast(i32) (f32(2*(10 + 5*play_state.bm.al)) * UI_SCALE)
+    rl.DrawLine(center_x - tick_offs_good, OFF_Y-5, center_x - tick_offs_good, OFF_Y+5, rl.GREEN)
+    rl.DrawLine(center_x + tick_offs_good, OFF_Y-5, center_x + tick_offs_good, OFF_Y+5, rl.GREEN)
+}
+
 ticks_to_timeline_x :: proc(beatmap: Beatmap, ticks: int, game_duration_ticks: int) -> int {
     return TIMELINE_ZOOM*(2*NOTE + beatmap.offset + ticks - game_duration_ticks)
 }
