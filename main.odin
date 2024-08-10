@@ -93,6 +93,7 @@ main :: proc() {
         frame_start_time := time.now()
         if rl.IsKeyPressed(.R) {
             ps_reset(&play_state)
+            rl.SeekMusicStream(music, 0.0)
         }
         game_duration := time.diff(play_state.start_time, frame_start_time)
         game_duration_in_ticks := dur_to_ticks(play_state.bm.bpm, game_duration)

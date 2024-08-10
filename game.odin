@@ -85,7 +85,7 @@ check_player_hit :: proc(play_state: ^Play_State, t: time.Duration) {
 check_expired_hits :: proc(play_state: ^Play_State, t: time.Duration) {
     for idx in play_state.next_hit_object_idx ..< len(play_state.bm.objects[:]) {
     hit_object_dur := bm_ticks_to_dur(&play_state.bm, play_state.bm.objects[idx].tick)
-    if t - hit_object_dur > 200*time.Millisecond {
+    if t - hit_object_dur > 300*time.Millisecond {
         play_state.next_hit_object_idx = idx + 1
         submit_hit(play_state, .Miss, t)
     } else {
