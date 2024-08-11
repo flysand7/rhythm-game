@@ -94,14 +94,14 @@ draw_hit_distribution :: proc(play_state: Play_State) {
         if abs(hit.diff_ms) >= WORST_HIT_MS {
             continue;
         }
-        bucket := (WORST_HIT_MS + hit.diff_ms) / GROUP_BY_MS
+        bucket := (WORST_HIT_MS - hit.diff_ms) / GROUP_BY_MS
         buckets[bucket] += 1
         if buckets[bucket] > max_hits {
             max_hits = buckets[bucket]
         }
     }
     for b, i in buckets {
-        bucket_off_x := OFF_X + i32(i)*i32(group_by_px)
+        bucket_off_x := OFF_X + i32(f32(i*GROUP_BY_MS)*UI_SCALE)
         bucket_height_y := i32(100*b / max_hits)
         rl.DrawRectangle(bucket_off_x, OFF_Y - bucket_height_y, i32(group_by_px), bucket_height_y, rl.WHITE)
     }
