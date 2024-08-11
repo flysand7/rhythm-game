@@ -163,7 +163,7 @@ main :: proc() {
             ps_reset(&play_state)
             rl.SeekMusicStream(music, 0.0)
         }
-        game_duration := time.diff(play_state.start_time, frame_start_time)
+        game_duration := time.Duration(f64(time.Second) * f64(rl.GetMusicTimePlayed(music)))
         game_duration_in_ticks := bm_dur_to_ticks(&play_state.bm, game_duration)
         timing := bm_get_timing(&play_state.bm, game_duration_in_ticks)
         rl.DrawLine(0, TIMELINE_Y, 1280, TIMELINE_Y, rl.GetColor(0x777777ff))
