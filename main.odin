@@ -11,7 +11,6 @@ main :: proc() {
     rl.InitAudioDevice()
     rl.SetTargetFPS(144)
     play_state := Play_State {
-        start_time = time.now(),
         next_hit_object_idx = 0,
         bm = Beatmap {
             objects = []Hit_Object {
@@ -72,10 +71,61 @@ main :: proc() {
                 {31*NOTE-QUARTER_NOTE, .Clap, 0xffffffff},
                 {31*NOTE,              .Clap, 0xffffffff},
                 {31*NOTE+HALF_NOTE,    .Clap, 0xffffffff},
+
+                {32*NOTE+HALF_NOTE,    .Rim,  0xffffffff},
+                {33*NOTE,              .Rim,  0xffffffff},
+                {33*NOTE+THIRD_NOTE,   .Rim,  0xffffffff},
+                {33*NOTE+2*THIRD_NOTE, .Rim,  0xffffffff},
+                {34*NOTE+HALF_NOTE,    .Rim,  0xffffffff},
+                {34*NOTE+3*QUARTER_NOTE,.Rim,  0xffffffff},
+                {35*NOTE,              .Rim,  0xffffffff},
+                {35*NOTE+THIRD_NOTE,   .Rim,  0xffffffff},
+                {35*NOTE+2*THIRD_NOTE, .Rim,  0xffffffff},
+                
+                {36*NOTE+HALF_NOTE,    .Clap,  0xffffffff},
+                {37*NOTE,              .Clap,  0xffffffff},
+                {37*NOTE+THIRD_NOTE,   .Clap,  0xffffffff},
+                {37*NOTE+2*THIRD_NOTE, .Clap,  0xffffffff},
+                {38*NOTE+HALF_NOTE,    .Clap,  0xffffffff},
+                {38*NOTE+3*QUARTER_NOTE,.Clap,  0xffffffff},
+                {39*NOTE,              .Clap,  0xffffffff},
+                {39*NOTE+THIRD_NOTE,   .Clap,  0xffffffff},
+                {39*NOTE+2*THIRD_NOTE, .Clap,  0xffffffff},
+
             },
-            offset = 30 + 5*NOTE,
-            bpm = 120,
+            timings = []Timing {
+                {
+                    offset = 0,
+                    signature = .Four_Quarters
+                },
+                {
+                    offset = 35*NOTE,
+                    signature = .Three_Quarters
+                },
+                {
+                    offset = 36*NOTE,
+                    signature = .Four_Quarters
+                },
+                {
+                    offset = 37*NOTE,
+                    signature = .Three_Quarters
+                },
+                {
+                    offset = 38*NOTE,
+                    signature = .Four_Quarters
+                },
+                {
+                    offset = 39*NOTE,
+                    signature = .Three_Quarters
+                },
+                {
+                    offset = 40*NOTE,
+                    signature = .Four_Quarters
+                },
+            },
             al = 5,
+            offset = 2770 * time.Millisecond,
+            bpm = 120,
         },
         hit_texts = make([dynamic]Hit_Text, allocator = context.allocator),
         hits = {},
@@ -99,6 +149,8 @@ main :: proc() {
         .Snare = hs_snare,
         .Symbal = hs_symbal,
     }
+    play_state.start_time = time.now()
+    started := false
     for !rl.WindowShouldClose() {
         mem.free_all(context.temp_allocator)
         rl.UpdateMusicStream(music)
@@ -111,9 +163,10 @@ main :: proc() {
             rl.SeekMusicStream(music, 0.0)
         }
         game_duration := time.diff(play_state.start_time, frame_start_time)
-        game_duration_in_ticks := dur_to_ticks(play_state.bm.bpm, game_duration)
+        game_duration_in_ticks := bm_dur_to_ticks(&play_state.bm, game_duration)
+        timing := bm_get_timing(&play_state.bm, game_duration_in_ticks)
         rl.DrawLine(0, TIMELINE_Y, 1280, TIMELINE_Y, rl.GetColor(0x777777ff))
-        draw_timeline(play_state.bm, game_duration_in_ticks)
+        draw_timeline(&play_state.bm, game_duration_in_ticks)
         draw_hit_distribution(play_state)
         for hit_object, idx in play_state.bm.objects {
             circle_color := rl.GetColor(hit_object.color)
@@ -121,19 +174,32 @@ main :: proc() {
                 circle_color = rl.RED
             }
             rl.DrawCircle(
-                cast(i32) ticks_to_timeline_x(play_state.bm, hit_object.tick, game_duration_in_ticks),
+                cast(i32) ticks_to_timeline_x(&play_state.bm, hit_object.tick, game_duration_in_ticks),
                 TIMELINE_Y,
                 10,
                 circle_color,
             )
         }
-        rl.DrawCircle(cast(i32) ticks_to_timeline_x(play_state.bm, -play_state.bm.offset, 0), TIMELINE_Y + 25, 5, rl.YELLOW)
+        rl.DrawCircle(cast(i32) timeline_x_zero(), TIMELINE_Y + 25, 5, rl.YELLOW)
         if rl.IsKeyPressed(.S) || rl.IsKeyPressed(.X) {
+            if rl.IsKeyPressed(.S) {
+                play_state.key1_hit_times += 1
+            } else if rl.IsKeyPressed(.X) {
+                play_state.key2_hit_times += 1
+            }
             ho, is_hit := check_player_hit(&play_state, game_duration)
             if is_hit {
                 rl.PlaySound(hitsounds[ho.hit_sound])
             }
         }
+        s_color := rl.RED if rl.IsKeyDown(.S) else rl.WHITE
+        rl.DrawRectangleLines(30, 400, 50, 50, s_color)
+        rl.DrawText("S", 30+13, 400+7, 40, s_color)
+        rl.DrawText(fmt.caprintf("%d", play_state.key1_hit_times, allocator=context.allocator), 30, 460, 20, rl.WHITE)
+        x_color := rl.RED if rl.IsKeyDown(.X) else rl.WHITE
+        rl.DrawRectangleLines(90, 400, 50, 50, x_color)
+        rl.DrawText("X", 90+13, 400+7, 40, x_color)
+        rl.DrawText(fmt.caprintf("%d", play_state.key2_hit_times, allocator=context.allocator), 90, 460, 20, rl.WHITE)
         check_expired_hits(&play_state, game_duration)
         #reverse for &ht, i in play_state.hit_texts {
             if game_duration - ht.time > 500*time.Millisecond {
