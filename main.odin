@@ -124,13 +124,14 @@ main :: proc() {
                 },
             },
             al = 5,
-            offset = 2770 * time.Millisecond,
+            offset = 2775 * time.Millisecond,
             bpm = 120,
         },
         hit_texts = make([dynamic]Hit_Text, allocator = context.allocator),
         hits = {},
     }
     music := rl.LoadMusicStream("./music/rhythm-hell.mp3")
+    music.looping = false
     rl.SetMusicVolume(music, 1.0)
     rl.PlayMusicStream(music)
     hs_kick := rl.LoadSound("./sounds/kick.wav")
